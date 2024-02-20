@@ -11,6 +11,8 @@ class Payment extends Base
     private string $reference;
     private string $notificationUrl;
     private string $returnUrl;
+    private string $issuerId;
+    private string $description;
 
     /**
      * @param float $amount
@@ -19,12 +21,14 @@ class Payment extends Base
      * @param string $returnUrl
      * @return void
      */
-    public function initialize(float $amount, string $reference, string $notificationUrl, string $returnUrl): void
+    public function initialize(float $amount, string $reference, string $notificationUrl, string $returnUrl, string $issuerId,  string $description): void
     {
         $this->amount = $amount;
         $this->reference = $reference;
         $this->notificationUrl = $notificationUrl;
         $this->returnUrl = $returnUrl;
+        $this->issuerId = $issuerId;
+        $this->description = $description;
     }
 
     /**
@@ -51,7 +55,10 @@ class Payment extends Base
                     'Amount' => number_format($this->amount, 2, '.', ''),
                     'Currency' => 'EUR',
                 ],
-                'RemittanceInformation' => 'Cookie',
+                'DebtorInformation' =>[
+                    'Agent' => $this->issuerId
+                ],
+                'RemittanceInformation' => $this->description,
                 'RemittanceInformationStructured' => ['Reference' => $this->reference],
             ],
             'IDEALPayments' => [
