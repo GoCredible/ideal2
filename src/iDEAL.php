@@ -88,10 +88,10 @@ class iDEAL
      * @throws InvalidDigestException
      * @throws ApiException
      */
-    public function createPayment(float $amount, string $reference, string $notificationUrl, string $returnUrl): Resources\Payment
+    public function createPayment(float $amount, string $reference, string $notificationUrl, string $returnUrl, string $issuerId, string $description): Resources\Payment
     {
         $payment = new Payment($this);
-        $payment->initialize($amount, $reference, $notificationUrl, $returnUrl);
+        $payment->initialize($amount, $reference, $notificationUrl, $returnUrl, $issuerId, $description);
         $responseBody = $this->request($payment);
 
         return new Resources\Payment(json_decode($responseBody, true));
