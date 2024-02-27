@@ -17,11 +17,11 @@ class Signer
      * @param $certificateFilePath
      * @param $privateKeyFilePath
      */
-    public function __construct($certificateFilePath, $privateKeyFilePath, $AcquirerCertificateFilePath)
+    public function __construct($certificateFilePath, $privateKeyFilePath, $acquirerCertificateFilePath)
     {
         $this->certificate = openssl_x509_read(file_get_contents($certificateFilePath));
         $this->privateKey = openssl_get_privatekey(file_get_contents($privateKeyFilePath));
-        $this->acquirer_certificate = openssl_x509_read(file_get_contents($AcquirerCertificateFilePath));
+        $this->acquirer_certificate = openssl_x509_read(file_get_contents($acquirerCertificateFilePath));
     }
 
     /**
@@ -114,13 +114,13 @@ class Signer
      */
     private function verifySignature(array $headers): void
     {
-        $signatire_arr = $this->getSignatureArr($headers['Signature'][0]);
+        $signature_arr = $this->getSignatureArr($headers['Signature'][0]);
         $finger_print = openssl_x509_fingerprint($this->acquirer_certificate);
-        if ($finger_print != strtolower( $signatire_arr['keyId'])) {
+        if ($finger_print != strtolower( $signature_arr['keyId'])) {
             throw new InvalidSignatureException();
         }
         
-        $header_keys_to_sign = explode(" ", $signatire_arr['headers']);
+        $header_keys_to_sign = explode(" ", $signature_arr['headers']);
         $headers_to_sign = [];
         $headers = array_change_key_case($headers, CASE_LOWER );
         foreach($header_keys_to_sign as $k){
@@ -130,16 +130,16 @@ class Signer
         }
         $signString = $this->getSignString($headers_to_sign);
 
-        if (!openssl_verify($signString, base64_decode($signatire_arr['signature']), $this->acquirer_certificate, OPENSSL_ALGO_SHA256)) {
+        if (!openssl_verify($signString, base64_decode($signature_arr['signature']), $this->acquirer_certificate, OPENSSL_ALGO_SHA256)) {
             throw new InvalidSignatureException();
         }
     }
 
-    private function getSignatureArr(string $sgnature): array
+    private function getSignatureArr(string $signature): array
     {
         $result = [];
         
-        foreach(explode(",", $sgnature) as $str) {
+        foreach(explode(",", $signature) as $str) {
 
             preg_match_all('/(\w+)\s*=\s*("[^"]*"|\'[^\']*\')/', $str, $match, PREG_SET_ORDER);
             $result[ $match[0][1] ] = str_replace('"', '', $match[0][2]);
