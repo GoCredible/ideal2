@@ -2,23 +2,26 @@
 
 namespace PetervdBroek\iDEAL2\Utils;
 
-use PetervdBroek\iDEAL2\Exceptions\InvalidDigestException;
-use OpenSSLAsymmetricKey;
 use OpenSSLCertificate;
+use OpenSSLAsymmetricKey;
+use PetervdBroek\iDEAL2\Exceptions\InvalidDigestException;
+use PetervdBroek\iDEAL2\Exceptions\InvalidSignatureException;
 
 class Signer
 {
     private OpenSSLCertificate $certificate;
     private OpenSSLAsymmetricKey $privateKey;
+    private OpenSSLCertificate $acquirer_certificate;
 
     /**
      * @param $certificateFilePath
      * @param $privateKeyFilePath
      */
-    public function __construct($certificateFilePath, $privateKeyFilePath)
+    public function __construct($certificateFilePath, $privateKeyFilePath, $AcquirerCertificateFilePath)
     {
         $this->certificate = openssl_x509_read(file_get_contents($certificateFilePath));
         $this->privateKey = openssl_get_privatekey(file_get_contents($privateKeyFilePath));
+        $this->acquirer_certificate = openssl_x509_read(file_get_contents($AcquirerCertificateFilePath));
     }
 
     /**
@@ -111,6 +114,37 @@ class Signer
      */
     private function verifySignature(array $headers): void
     {
-        // TODO implement when public certificate is available
+        $signatire_arr = $this->getSignatureArr($headers['Signature'][0]);
+        $finger_print = openssl_x509_fingerprint($this->acquirer_certificate);
+        if ($finger_print != strtolower( $signatire_arr['keyId'])) {
+            throw new InvalidSignatureException();
+        }
+        
+        $header_keys_to_sign = explode(" ", $signatire_arr['headers']);
+        $headers_to_sign = [];
+        $headers = array_change_key_case($headers, CASE_LOWER );
+        foreach($header_keys_to_sign as $k){
+            if(!empty($headers[$k][0])){
+                $headers_to_sign[$k] = $headers[$k][0];
+            }
+        }
+        $signString = $this->getSignString($headers_to_sign);
+
+        if (!openssl_verify($signString, base64_decode($signatire_arr['signature']), $this->acquirer_certificate, OPENSSL_ALGO_SHA256)) {
+            throw new InvalidSignatureException();
+        }
+    }
+
+    private function getSignatureArr(string $sgnature): array
+    {
+        $result = [];
+        
+        foreach(explode(",", $sgnature) as $str) {
+
+            preg_match_all('/(\w+)\s*=\s*("[^"]*"|\'[^\']*\')/', $str, $match, PREG_SET_ORDER);
+            $result[ $match[0][1] ] = str_replace('"', '', $match[0][2]);
+            
+        }
+        return $result;
     }
 }

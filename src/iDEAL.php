@@ -41,12 +41,13 @@ class iDEAL
         string $baseUri,
         string $certificateFilePath,
         string $privateKeyFilePath,
+        string $AcquirerCertificateFilePath,
     )
     {
         $this->merchantId = $merchantId;
         $this->client = $client;
         $this->httpClient = new Client(['base_uri' => $baseUri]);
-        $this->signer = new Signer($certificateFilePath, $privateKeyFilePath);
+        $this->signer = new Signer($certificateFilePath, $privateKeyFilePath, $AcquirerCertificateFilePath);
     }
 
     /**
@@ -88,7 +89,7 @@ class iDEAL
      * @throws InvalidDigestException
      * @throws ApiException
      */
-    public function createPayment(float $amount, string $reference, string $notificationUrl, string $returnUrl, string $issuerId, string $description): Resources\Payment
+    public function createPayment(float $amount, string $reference, string $notificationUrl, string $returnUrl, string|null $issuerId = null, string $description = ''): Resources\Payment
     {
         $payment = new Payment($this);
         $payment->initialize($amount, $reference, $notificationUrl, $returnUrl, $issuerId, $description);
@@ -118,6 +119,17 @@ class iDEAL
         return new Resources\PaymentStatus(json_decode($responseBody, true));
     }
 
+    public function verifyRequest(array $headers, string $body): bool
+    {
+        try {
+            $this->signer->verifyResponse($headers, $body);
+        } catch (\Exception $e) {
+            return false;
+        }
+        return true;
+    }
+
+
     /**
      * @param Base $endpoint
      * @return string
@@ -145,6 +157,8 @@ class iDEAL
 
         return $body;
     }
+
+
 
     /**
      * @param Base $endpoint

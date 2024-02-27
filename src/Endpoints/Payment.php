@@ -11,7 +11,7 @@ class Payment extends Base
     private string $reference;
     private string $notificationUrl;
     private string $returnUrl;
-    private string $issuerId;
+    private string|null $issuerId;
     private string $description;
 
     /**
@@ -21,7 +21,7 @@ class Payment extends Base
      * @param string $returnUrl
      * @return void
      */
-    public function initialize(float $amount, string $reference, string $notificationUrl, string $returnUrl, string $issuerId,  string $description): void
+    public function initialize(float $amount, string $reference, string $notificationUrl, string $returnUrl, string|null $issuerId = null,  string $description = ''): void
     {
         $this->amount = $amount;
         $this->reference = $reference;
