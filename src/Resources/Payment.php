@@ -14,7 +14,15 @@ class Payment extends Base
     {
         return $this->response['CommonPaymentData']['PaymentId'];
     }
-
+    
+    /**
+     * @return string
+     */
+    public function getAspspPaymentId(): string
+    {
+        return $this->response['CommonPaymentData']['AspspPaymentId'];
+    }
+    
     /**
      * @return string
      */
